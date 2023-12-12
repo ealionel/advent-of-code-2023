@@ -96,7 +96,6 @@ fn main() {
     let mut memo: Vec<i32> = vec![-1; cards.len()];
 
     for i in 0..cards.len() {
-        println!("Card #{}: ", i);
         stretchcards += get_stratchcards(&cards, i as u32, &mut memo);
     }
     // stretchcards += get_stratchcards(&cards, 0 as u32);
@@ -104,7 +103,6 @@ fn main() {
     println!("Answer 1: {}", answer1);
     println!("Answer 2: {}", stretchcards);
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
