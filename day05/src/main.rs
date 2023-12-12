@@ -121,6 +121,11 @@ fn get_pairs(seeds: &Vec<u64>) -> Vec<(u64, u64)> {
     pairs
 }
 
+fn is_value_in_range(value: u64, seed_range: &(u64, u64)) -> bool {
+    let (seed, range) = seed_range;
+    value >= *seed && value < seed + range
+}
+
 fn map_location_to_seed(location: u64, almanac: &Vec<MapperGroup>) -> u64 {
     let mut current_location = location;
 
@@ -138,6 +143,24 @@ fn map_location_to_seed(location: u64, almanac: &Vec<MapperGroup>) -> u64 {
     current_location
 }
 
+fn answer2(seeds: &Vec<u64>, almanac: &Vec<MapperGroup>) -> u64 {
+    let seed_ranges: Vec<(u64, u64)> = get_pairs(seeds);
+
+    for val in 0..u64::MAX {
+        let original_seed = map_location_to_seed(val, almanac);
+
+        let found = seed_ranges
+            .iter()
+            .find(|seed_range| is_value_in_range(original_seed, *seed_range));
+
+        if let Some(found_value) = found {
+            return original_seed;
+        }
+    }
+
+    return 0;
+}
+
 fn main() -> io::Result<()> {
     let input = fs::read_to_string("./input.txt")?;
 
@@ -149,17 +172,31 @@ fn main() -> io::Result<()> {
         .min()
         .unwrap();
 
-    println!("Answer 1: {}", min_seed_location);
-
-    let min_location = almanac
-        .last()
-        .unwrap()
-        .mappers
-        .iter()
-        .map(|mapper| mapper.destination)
+    let ranges = get_pairs(&seeds)
+        .par_iter()
+        .map(|(seed, range)| {
+            (0..*range)
+                .into_par_iter()
+                .map(|i| {
+                    if i % 1000000 == 0 {
+                        println!(
+                            "({}) \t{:.3}% i={} range={}",
+                            seed,
+                            i as f64 / *range as f64,
+                            i,
+                            range
+                        );
+                    }
+                    // println!("{}\t/{}", seed + i, seed + range);
+                    map_seed_to_location(*seed + i, &almanac)
+                })
+                .min()
+                .unwrap()
+        })
         .min()
         .unwrap();
 
+    println!("Answer 1: {}", min_seed_location);
     println!("Answer 2: {}", ranges);
 
     Ok(())
