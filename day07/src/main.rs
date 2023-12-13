@@ -43,7 +43,7 @@ fn compare_card(card1: char, card2: char) -> Ordering {
         'A' => 14,
         'K' => 13,
         'Q' => 12,
-        'J' => 11,
+        'J' => 1, // changed to 1 for part b
         'T' => 10,
         _ => card1.to_digit(10).unwrap(),
     };
@@ -52,7 +52,7 @@ fn compare_card(card1: char, card2: char) -> Ordering {
         'A' => 14,
         'K' => 13,
         'Q' => 12,
-        'J' => 11,
+        'J' => 1, // changed to 1 for part b
         'T' => 10,
         _ => card2.to_digit(10).unwrap(),
     };
@@ -89,6 +89,15 @@ fn parse_line(line: &str) -> (HandType, u32) {
 
     let bid = parts[1].parse::<u32>().unwrap();
     let hand = get_hand_type(parts[0]);
+
+    (hand, bid)
+}
+
+fn parse_line_2(line: &str) -> (HandType, u32) {
+    let parts = line.split(" ").collect::<Vec<&str>>();
+
+    let bid = parts[1].parse::<u32>().unwrap();
+    let hand = get_hand_type_2(parts[0]);
 
     (hand, bid)
 }
@@ -132,8 +141,65 @@ fn get_hand_type(hand: &str) -> HandType {
     HandType::HighCard(String::from(hand))
 }
 
+fn get_hand_type_2(hand: &str) -> HandType {
+    let mut cards_count: HashMap<char, u32> = HashMap::new();
+
+    let mut max_card = '0';
+    let mut max_card_count = 0;
+
+    for card in hand.chars() {
+        let count: &mut u32 = cards_count.entry(card).or_insert(0);
+        *count += 1;
+
+        if card != 'J' && *count > max_card_count {
+            max_card_count = *count;
+            max_card = card;
+        }
+    }
+
+    if let Some(joker_count) = cards_count.get(&'J') {
+        let joker_count = *joker_count;
+        let count = cards_count.entry(max_card).or_insert(0);
+        *count += joker_count;
+
+        if cards_count.len() > 1 {
+            cards_count.remove(&'J');
+        }
+    }
+
+    let mut counts = cards_count.values().collect::<Vec<&u32>>();
+
+    counts.sort_by(|a, b| b.cmp(a));
+
+    if *counts[0] == 5 {
+        return HandType::FiveOfAKind(String::from(hand));
+    }
+
+    if *counts[0] == 4 {
+        return HandType::FourOfAKind(String::from(hand));
+    }
+
+    if counts.len() == 2 && *counts[0] == 3 {
+        return HandType::FullHouse(String::from(hand));
+    }
+
+    if counts.len() == 3 && *counts[0] == 3 {
+        return HandType::ThreeOfAKind(String::from(hand));
+    }
+
+    if counts.len() == 3 && *counts[0] == 2 && *counts[1] == 2 {
+        return HandType::TwoPair(String::from(hand));
+    }
+
+    if counts.len() == 4 && *counts[0] == 2 {
+        return HandType::OnePair(String::from(hand));
+    }
+
+    HandType::HighCard(String::from(hand))
+}
+
 fn rank_hands(input: &mut Vec<(HandType, u32)>) -> u32 {
-    let mut hands = input.clone();
+    let mut hands: Vec<(HandType, u32)> = input.clone();
     hands.sort_by(|a, b| a.0.cmp(&b.0));
 
     let mut sum = 0;
@@ -152,11 +218,18 @@ fn main() {
 
     let answer1 = rank_hands(&mut parsed);
 
+    let mut parsed: Vec<(HandType, u32)> = input.lines().map(|line| parse_line_2(line)).collect();
+
+    let answer2 = rank_hands(&mut parsed);
+
     println!("Answer 1: {}", answer1);
+    println!("Answer 2: {}", answer2);
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::get_hand_type_2;
+
     use super::*;
 
     #[test]
@@ -221,5 +294,21 @@ mod tests {
         let full_house_2: HandType = HandType::FullHouse(String::from("AAATT"));
 
         assert_eq!(full_house_1.cmp(&full_house_2), Ordering::Less);
+    }
+
+    #[test]
+    fn test_get_hand_type_2() {
+        assert_eq!(
+            get_hand_type_2("T55J5"),
+            HandType::FourOfAKind(String::from("T55J5"))
+        );
+        assert_eq!(
+            get_hand_type_2("KTJJT"),
+            HandType::FourOfAKind(String::from("KTJJT"))
+        );
+        assert_eq!(
+            get_hand_type_2("QQQJA"),
+            HandType::FourOfAKind(String::from("QQQJA"))
+        );
     }
 }
