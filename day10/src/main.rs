@@ -152,7 +152,7 @@ fn substitute_starting_point(map: &mut Map) {
         Direction::West,
     ];
 
-    let allowed_directions = all_directions
+    let allowed_directions: HashSet<Direction> = all_directions
         .iter()
         .filter(|direction| {
             can_go(
@@ -164,7 +164,7 @@ fn substitute_starting_point(map: &mut Map) {
         .cloned()
         .collect::<HashSet<Direction>>();
 
-    let new_char = allowed_directions_to_char(&allowed_directions);
+    let new_char: char = allowed_directions_to_char(&allowed_directions);
 
     map[starting_cell.0 as usize][starting_cell.1 as usize] = 'L';
 }
